@@ -14,14 +14,20 @@ class SubjectController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:subjects,code'
-        ]);
+        \Log::info('Subject creation request', $request->all());
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'code' => 'required|string|unique:subjects,code'
+            ]);
 
-        return response()->json(
-            Subject::create($validated),
-            201
-        );
+            $subject = Subject::create($validated);
+            \Log::info('Subject created', $subject->toArray());
+
+            return response()->json($subject, 201);
+        } catch (\Exception $e) {
+            \Log::error('Subject creation failed', ['error' => $e.getMessage()]);
+            throw $e;
+        }
     }
 }

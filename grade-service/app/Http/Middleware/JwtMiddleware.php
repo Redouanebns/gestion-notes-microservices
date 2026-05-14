@@ -27,14 +27,18 @@ class JwtMiddleware
             // Decode JWT token
             $decoded = JWT::decode(
                 $token,
-                new Key(env('JWT_SECRET'), 'HS256')
+                new Key(config('app.jwt_secret'), 'HS256')
             );
 
             // Store user data in request
             $request->attributes->set('user', $decoded);
 
         } catch (\Exception $e) {
-
+            \Log::error('JWT Decoding Failed', [
+                'error' => $e->getMessage(),
+                'secret_configured' => !!config('app.jwt_secret'),
+                'token_prefix' => substr($token, 0, 10) . '...'
+            ]);
             return response()->json([
                 'message' => 'Invalid or expired token'
             ], 401);
