@@ -1,0 +1,73 @@
+# =========================
+# Node.js
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# =========================
+# Laravel / PHP
+# =========================
+vendor/
+bootstrap/cache/*
+storage/*.key
+
+# Laravel storage
+storage/app/public
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+
+# Ignore everything in bootstrap/cache except .gitignore
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# PHPUnit
+.phpunit.result.cache
+
+# Composer
+composer.lock
+
+# IDEs
+.idea/
+.vscode/
+
+# =========================
+# Docker
+# =========================
+docker-data/
+*.pid
+
+# =========================
+# RabbitMQ
+# =========================
+.rabbitmq/
+
+# =========================
+# Build / temp files
+# =========================
+dist/
+build/
+tmp/
+temp/
+
+# =========================
+# Misc
+# =========================
+*.swp
+*.swo
