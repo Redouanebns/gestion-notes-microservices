@@ -18,8 +18,12 @@ Route::middleware('jwt')->group(function () {
     // Subjects routes
     Route::get('/subjects', [SubjectController::class, 'index']);
     Route::post('/subjects', [SubjectController::class, 'store']);
+    Route::put('/subjects/{id}', [SubjectController::class, 'update']);
+    Route::delete('/subjects/{id}', [SubjectController::class, 'destroy']);
 
     // Grades routes
     Route::get('/grades', [GradeController::class, 'index']);
     Route::post('/grades', [GradeController::class, 'store']);
+    Route::put('/grades/{id}', [GradeController::class, 'update']);
+    Route::delete('/grades/{id}', [GradeController::class, 'destroy']);
 });

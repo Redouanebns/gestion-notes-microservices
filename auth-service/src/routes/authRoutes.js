@@ -25,8 +25,15 @@ email,
 password: hashedPassword,
 role
 });
+// Génération du token JWT directement après l'inscription
+const token = jwt.sign(
+  { id: user._id, email: user.email, role: user.role },
+  process.env.JWT_SECRET,
+  { expiresIn: '2h' }
+);
 res.status(201).json({
 message: 'User created successfully',
+token,
 user: {
 id: user._id,
 name: user.name,
@@ -81,6 +88,27 @@ res.json({
 message: 'Protected profile route',
 user: req.user
 });
+});
+// User management (Admin only)
+router.get('/users', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+  const users = await User.find({}, '-password');
+  res.json(users);
+});
+
+router.put('/users/:id', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+  const { name, email, role } = req.body;
+  const user = await User.findByIdAndUpdate(req.params.id, { name, email, role }, { new: true }).select('-password');
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user);
+});
+
+router.delete('/users/:id', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+  const user = await User.findByIdAndDelete(req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json({ message: 'User deleted' });
 });
 
 module.exports = router;

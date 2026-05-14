@@ -25,7 +25,10 @@ registrationNumber: {
 type: String,
 required: true,
 unique: true
-}
+},
+enrolledSubjects: [{
+type: String
+}]
 },
 { timestamps: true }
 );

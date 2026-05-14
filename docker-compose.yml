@@ -1,98 +1,106 @@
 services:
-auth-mongo:
-image: mongo:7
-container_name: auth-mongo
-ports:
-- "27017:27017"
+  auth-mongo:
+    image: mongo:7
+    container_name: auth-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - auth_mongo_data:/data/db
+
+  student-mongo:
+    image: mongo:7
+    container_name: student-mongo
+    ports:
+      - "27018:27017"
+    volumes:
+      - student_mongo_data:/data/db
+
+  mysql:
+    image: mysql:8
+    container_name: grade-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: grade_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "4001:4001"
+    environment:
+      PORT: 4001
+      MONGO_URI: mongodb://auth-mongo:27017/auth_db
+      JWT_SECRET: super_secret_key_to_change
+    depends_on:
+      - auth-mongo
+    volumes:
+      - ./auth-service:/app
+      - /app/node_modules
+
+  student-service:
+    build: ./student-service
+    container_name: student-service
+    ports:
+      - "4002:4002"
+    environment:
+      PORT: 4002
+      MONGO_URI: mongodb://student-mongo:27017/student_db
+      JWT_SECRET: super_secret_key_to_change
+    depends_on:
+      - student-mongo
+    volumes:
+      - ./student-service:/app
+      - /app/node_modules
+
+  grade-service:
+    build: ./grade-service
+    container_name: grade-service
+    ports:
+      - "4003:4003"
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: grade_db
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      JWT_SECRET: super_secret_key_to_change
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+    depends_on:
+      - mysql
+      - rabbitmq
+    volumes:
+      - ./grade-service:/app
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "4004:4004"
+    environment:
+      PORT: 4004
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./notification-service:/app
+      - /app/node_modules
+
 volumes:
-- auth_mongo_data:/data/db
-student-mongo:
-image: mongo:7
-container_name: student-mongo
-ports:
-- "27018:27017"
-volumes:
-- student_mongo_data:/data/db
-mysql:
-image: mysql:8
-container_name: grade-mysql
-environment:
-MYSQL_ROOT_PASSWORD: root
-MYSQL_DATABASE: grade_db
-ports:
-- "3306:3306"
-volumes:
-- mysql_data:/var/lib/mysql
-rabbitmq:
-image: rabbitmq:3-management
-container_name: rabbitmq
-ports:
-- "5672:5672"
-- "15672:15672"
-auth-service:
-build: ./auth-service
-container_name: auth-service
-ports:
-- "4001:4001"
-environment:
-PORT: 4001
-MONGO_URI: mongodb://auth-mongo:27017/auth_db
-JWT_SECRET: super_secret_key_to_change
-depends_on:
-- auth-mongo
-28volumes:
-- ./auth-service:/app
-- /app/node_modules
-student-service:
-build: ./student-service
-container_name: student-service
-ports:
-- "4002:4002"
-environment:
-PORT: 4002
-MONGO_URI: mongodb://student-mongo:27017/student_db
-JWT_SECRET: super_secret_key_to_change
-depends_on:
-- student-mongo
-volumes:
-- ./student-service:/app
-- /app/node_modules
-grade-service:
-build: ./grade-service
-container_name: grade-service
-ports:
-- "4003:4003"
-environment:
-DB_CONNECTION: mysql
-DB_HOST: mysql
-DB_PORT: 3306
-DB_DATABASE: grade_db
-DB_USERNAME: root
-DB_PASSWORD: root
-JWT_SECRET: super_secret_key_to_change
-RABBITMQ_HOST: rabbitmq
-RABBITMQ_PORT: 5672
-RABBITMQ_USER: guest
-RABBITMQ_PASSWORD: guest
-depends_on:
-- mysql
-- rabbitmq
-volumes:
-- ./grade-service:/app
-notification-service:
-build: ./notification-service
-container_name: notification-service
-ports:
-- "4004:4004"
-environment:
-PORT: 4004
-RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-depends_on:
-29- rabbitmq
-volumes:
-- ./notification-service:/app
-- /app/node_modules
-volumes:
-auth_mongo_data:
-student_mongo_data:
-mysql_data:
+  auth_mongo_data:
+  student_mongo_data:
+  mysql_data:
