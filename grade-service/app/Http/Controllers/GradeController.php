@@ -15,8 +15,13 @@ class GradeController extends Controller
         $query = Grade::with('subject')->latest();
         
         if (isset($user->role) && $user->role === 'student') {
-            $query->where('student_id', $user->id)
-                  ->orWhere('student_id', $user->email);
+            $studentId = $request->query('student_id');
+            if ($studentId) {
+                $query->where('student_id', $studentId);
+            } else {
+                $query->where('student_id', $user->id)
+                      ->orWhere('student_id', $user->email);
+            }
         }
 
         return $query->get();

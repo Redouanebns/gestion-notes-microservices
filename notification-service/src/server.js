@@ -15,10 +15,7 @@ app.use(express.json());
 const QUEUE = 'grade_created';
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/gestion_notes_notifications', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('Connected to MongoDB (Notifications)'))
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/gestion_notes_notifications').then(() => console.log('Connected to MongoDB (Notifications)'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 async function startConsumer() {

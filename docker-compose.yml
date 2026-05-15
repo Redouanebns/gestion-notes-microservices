@@ -6,6 +6,12 @@ services:
       - "27017:27017"
     volumes:
       - auth_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   student-mongo:
     image: mongo:7
@@ -14,6 +20,12 @@ services:
       - "27018:27017"
     volumes:
       - student_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   mysql:
     image: mysql:8
@@ -22,7 +34,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: grade_db
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 
@@ -36,14 +48,16 @@ services:
   auth-service:
     build: ./auth-service
     container_name: auth-service
+    restart: on-failure
     ports:
       - "4001:4001"
     environment:
       PORT: 4001
       MONGO_URI: mongodb://auth-mongo:27017/auth_db
-      JWT_SECRET: super_secret_key_to_change
+      JWT_SECRET: super_secret_key_gestion_notes_2025!
     depends_on:
-      - auth-mongo
+      auth-mongo:
+        condition: service_healthy
     volumes:
       - ./auth-service:/app
       - /app/node_modules
@@ -51,14 +65,16 @@ services:
   student-service:
     build: ./student-service
     container_name: student-service
+    restart: on-failure
     ports:
       - "4002:4002"
     environment:
       PORT: 4002
       MONGO_URI: mongodb://student-mongo:27017/student_db
-      JWT_SECRET: super_secret_key_to_change
+      JWT_SECRET: super_secret_key_gestion_notes_2025!
     depends_on:
-      - student-mongo
+      student-mongo:
+        condition: service_healthy
     volumes:
       - ./student-service:/app
       - /app/node_modules
@@ -75,7 +91,7 @@ services:
       DB_DATABASE: grade_db
       DB_USERNAME: root
       DB_PASSWORD: root
-      JWT_SECRET: super_secret_key_to_change
+      JWT_SECRET: super_secret_key_gestion_notes_2025!
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest

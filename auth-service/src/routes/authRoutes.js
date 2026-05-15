@@ -42,6 +42,7 @@ role: user.role
 }
 });
 } catch (error) {
+console.error(error.stack);
 res.status(500).json({ message: 'Server error', error: error.message });
 }
 });

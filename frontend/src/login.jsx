@@ -19,7 +19,8 @@ export default function Login({ onLogin }) {
     setLoading(true);
     try {
       if (isRegister) {
-        const response = await authApi.post('/register', { name, email, password, role });
+        const finalName = role === 'student' ? `${firstName} ${lastName}`.trim() : name;
+        const response = await authApi.post('/register', { name: finalName, email, password, role });
         const { token, user } = response.data;
         localStorage.setItem('token', token);
 

@@ -24,6 +24,7 @@ export default function App() {
   const [editingSubject, setEditingSubject] = useState(null);
   const [showEditGrade, setShowEditGrade] = useState(false);
   const [editingGrade, setEditingGrade] = useState(null);
+  const [selectedStudentForGrade, setSelectedStudentForGrade] = useState('');
 
   async function loadData() {
     try {
@@ -51,11 +52,23 @@ export default function App() {
       }
 
       if (currentUser?.role === 'student') {
+        const studentProfile = results[0].data.find(s => s.email === currentUser.email);
+        const notifId = studentProfile ? studentProfile._id : currentUser.id;
+        
         try {
-          const notifs = await notificationApi.get(`/notifications/${currentUser.id}`);
+          const notifs = await notificationApi.get(`/notifications/${notifId}`);
           setNotifications(notifs.data);
         } catch (e) {
           console.error("Erreur chargement notifications", e);
+        }
+        
+        if (studentProfile) {
+          try {
+             const studentGrades = await gradeApi.get(`/grades?student_id=${studentProfile._id}`);
+             setGrades(studentGrades.data);
+          } catch (e) {
+             console.error("Erreur chargement notes", e);
+          }
         }
       }
     } catch (err) {
@@ -398,7 +411,14 @@ export default function App() {
                  )}
                  <div className="bg-white rounded-3xl p-7 border border-slate-100 shadow-sm">
                    <p className="text-sm font-bold text-slate-400 uppercase">Matières Actives</p>
-                   <h3 className="text-4xl font-extrabold text-slate-800">{subjects.length}</h3>
+                   <h3 className="text-4xl font-extrabold text-slate-800">
+                     {user?.role === 'student' && studentProfile
+                       ? subjects.filter(sub => studentProfile.enrolledSubjects?.includes(sub.id.toString())).length
+                       : user?.role === 'teacher'
+                         ? subjects.filter(sub => sub.teacher_id === user.id).length
+                         : subjects.length
+                     }
+                   </h3>
                  </div>
                  <div className="bg-white rounded-3xl p-7 border border-slate-100 shadow-sm">
                    <p className="text-sm font-bold text-slate-400 uppercase">Notes Saisies</p>
@@ -488,8 +508,7 @@ export default function App() {
                     {(user?.role === 'teacher' ? students.filter(s => {
                       const teacherSubjects = subjects.filter(sub => sub.teacher_id === user.id);
                       return teacherSubjects.some(sub => 
-                        s.enrolledSubjects?.includes(sub.id.toString()) || 
-                        (!s.enrolledSubjects?.length && (sub.level === s.level || (!sub.level && s.level === 'L1')))
+                        s.enrolledSubjects?.includes(sub.id.toString())
                       );
                     }) : students).map(s => (
                       <tr key={s._id} className="hover:bg-slate-50 transition-colors">
@@ -501,8 +520,7 @@ export default function App() {
                             {(() => {
                               // All subjects the student is enrolled in
                               const studentSubs = subjects.filter(sub =>
-                                s.enrolledSubjects?.includes(sub.id.toString()) ||
-                                (!s.enrolledSubjects?.length && (sub.level === s.level || (!sub.level && s.level === 'L1')))
+                                s.enrolledSubjects?.includes(sub.id.toString())
                               );
                               // If teacher: only show subjects that belong to this teacher
                               const visibleSubs = user?.role === 'teacher'
@@ -536,7 +554,7 @@ export default function App() {
             {activeTab === 'subjects' && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {(user?.role === 'student' && studentProfile
-                  ? subjects.filter(sub => studentProfile.enrolledSubjects?.includes(sub.id.toString()) || (!studentProfile.enrolledSubjects?.length && (sub.level === studentProfile.level || (!sub.level && studentProfile.level === 'L1'))))
+                  ? subjects.filter(sub => studentProfile.enrolledSubjects?.includes(sub.id.toString()))
                   : user?.role === 'teacher'
                     ? subjects.filter(sub => sub.teacher_id === user.id)
                     : subjects
@@ -683,14 +701,19 @@ export default function App() {
             <form onSubmit={handleAddGrade} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Étudiant</label>
-                <select required name="student_id" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                <select 
+                  required 
+                  name="student_id" 
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  value={selectedStudentForGrade}
+                  onChange={(e) => setSelectedStudentForGrade(e.target.value)}
+                >
                   <option value="">Sélectionner un étudiant...</option>
                   {(user?.role === 'teacher'
                     ? students.filter(s => {
                         const teacherSubjects = subjects.filter(sub => sub.teacher_id === user.id);
                         return teacherSubjects.some(sub =>
-                          s.enrolledSubjects?.includes(sub.id.toString()) ||
-                          (!s.enrolledSubjects?.length && (sub.level === s.level || (!sub.level && s.level === 'L1')))
+                          s.enrolledSubjects?.includes(sub.id.toString())
                         );
                       })
                     : students
@@ -701,7 +724,14 @@ export default function App() {
                 <label className="block text-sm font-bold text-slate-700 mb-1">Matière</label>
                 <select required name="subject_id" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
                   <option value="">Sélectionner une matière...</option>
-                  {subjects.filter(sub => user?.role === 'admin' || sub.teacher_id === user?.id).map(sub => (
+                  {subjects.filter(sub => {
+                    const isAllowedByRole = user?.role === 'admin' || sub.teacher_id === user?.id;
+                    if (!isAllowedByRole) return false;
+                    
+                    if (!selectedStudentForGrade) return true; // Show all allowed if no student selected yet
+                    const student = students.find(s => s._id === selectedStudentForGrade);
+                    return student?.enrolledSubjects?.includes(sub.id.toString());
+                  }).map(sub => (
                     <option key={sub.id} value={sub.id}>{sub.name} ({sub.level})</option>
                   ))}
                 </select>
